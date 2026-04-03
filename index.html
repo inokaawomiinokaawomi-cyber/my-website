@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inoka MindFresh</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --tile-bg: #e0f2f1; --tile-border: #80cbc4; --tile-text: #00695c;
+      --tile-hover: #b2dfdb; --tile-correct: #a5d6a7; --board-bg: #f0fdfa; --accent: #0d9488;
+    }
+    html.dark {
+      --tile-bg: #1e3a38; --tile-border: #2dd4bf; --tile-text: #99f6e4;
+      --tile-hover: #134e4a; --tile-correct: #14532d; --board-bg: #0f2421; --accent: #2dd4bf;
+    }
+    body { transition: background-color 0.3s ease, color 0.3s ease; user-select: none; -webkit-user-select: none; touch-action: none; overflow-x: hidden; }
+    html.light body { background: linear-gradient(135deg, #e0f2f1 0%, #f0fdf4 50%, #e0f7fa 100%); min-height: 100vh; }
+    html.dark body { background: linear-gradient(135deg, #042f2e 0%, #0f2421 50%, #022c22 100%); min-height: 100vh; }
+    .tile {
+      background-color: var(--tile-bg); border: 2px solid var(--tile-border); color: var(--tile-text);
+      border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; cursor: pointer;
+      transition: transform 0.14s cubic-bezier(0.34,1.56,0.64,1), background-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .tile:hover { background-color: var(--tile-hover); transform: scale(1.04); box-shadow: 0 6px 18px rgba(0,0,0,0.13), inset 0 1px 0 rgba(255,255,255,0.4); z-index: 2; }
+    .tile:active { transform: scale(0.96); }
+    .tile.correct { background-color: var(--tile-correct); border-color: #4ade80; box-shadow: 0 3px 10px rgba(74,222,128,0.3); }
+    .board-grid { display: grid; gap: 8px; padding: 14px; background: var(--board-bg); border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.3); transition: background-color 0.3s ease; }
+    .card { background: rgba(255,255,255,0.75); backdrop-filter: blur(12px); border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: background-color 0.3s ease; }
+    html.dark .card { background: rgba(15,36,33,0.8); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .btn-primary { background: linear-gradient(135deg, #0d9488, #059669); color: white; border: none; border-radius: 12px; padding: 10px 22px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; box-shadow: 0 4px 12px rgba(13,148,136,0.35); font-size: 14px; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(13,148,136,0.45); }
+    .btn-primary:active { transform: translateY(0); opacity: 0.9; }
+    .btn-secondary { background: transparent; border: 2px solid var(--tile-border); color: var(--accent); border-radius: 12px; padding: 9px 20px; font-weight: 600; cursor: pointer; transition: background-color 0.15s ease, transform 0.15s ease; font-size: 14px; }
+    .btn-secondary:hover { background-color: var(--tile-hover); transform: translateY(-1px); }
+    .diff-tab { padding: 8px 18px; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s ease; border: 2px solid transparent; color: var(--tile-text); }
+    .diff-tab.active { background: linear-gradient(135deg, #0d9488, #059669); color: white; box-shadow: 0 3px 10px rgba(13,148,136,0.35); }
+    .diff-tab:not(.active):hover { border-color: var(--tile-border); background: var(--tile-hover); }
+    .confetti-piece { position: fixed; width: 10px; height: 10px; top: -20px; border-radius: 2px; animation: confettiFall linear forwards; pointer-events: none; z-index: 1000; }
+    @keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+    .win-screen { animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    @keyframes popIn { 0% { transform: scale(0.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .modal-overlay { background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); }
+    .modal-content { animation: slideUp 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes statPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+    .stat-pulse { animation: statPulse 0.3s ease; }
+    .toggle-track { width: 44px; height: 24px; border-radius: 12px; background: var(--tile-border); position: relative; cursor: pointer; transition: background 0.3s ease; }
+    .toggle-thumb { width: 18px; height: 18px; border-radius: 50%; background: white; position: absolute; top: 3px; left: 3px; transition: left 0.25s ease; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+    html.dark .toggle-thumb { left: 23px; }
+    html.dark .toggle-track { background: #2dd4bf; }
+    .tile-sm { font-size: clamp(12px,4vw,18px); } .tile-md { font-size: clamp(16px,5vw,28px); } .tile-lg { font-size: clamp(20px,6vw,36px); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-4 pb-12">
+
+  <header class="w-full max-w-lg flex items-center justify-between py-5 px-2">
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight" style="color:var(--accent)">🧩 MindFresh Puzzle</h1>
+      <p class="text-xs mt-0.5 opacity-60 font-medium" style="color:var(--tile-text)">Slide tiles · Clear your mind</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <button class="btn-secondary text-xs px-3 py-2" onclick="openHowToPlay()">? How to Play</button>
+      <div class="flex items-center gap-2" onclick="toggleDark()" style="cursor:pointer">
+        <span class="text-base select-none" id="modeIcon">☀️</span>
+        <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="card w-full max-w-lg flex items-center justify-around px-4 py-3 mb-5">
+    <div class="text-center">
+      <div class="text-xs font-semibold uppercase tracking-widest opacity-50 mb-0.5">Moves</div>
+      <div class="text-2xl font-extrabold tabular-nums" style="color:var(--accent)" id="moveCounter">0</div>
+    </div>
+    <div class="text-center">
+      <div class="text-xs font-semibold uppercase tracking-widest opacity-50 mb-0.5">Time</div>
+      <div class="text-2xl font-extrabold tabular-nums" style="color:var(--accent)" id="timerDisplay">0:00</div>
+    </div>
+    <div class="text-center">
+      <div class="text-xs font-semibold uppercase tracking-widest opacity-50 mb-0.5">Best</div>
+      <div class="text-2xl font-extrabold tabular-nums" style="color:var(--accent)" id="bestDisplay">—</div>
+    </div>
+  </div>
+
+  <div class="card w-full max-w-lg px-4 py-3 mb-5">
+    <div class="text-xs font-bold uppercase tracking-widest opacity-50 mb-2">Difficulty</div>
+    <div class="flex gap-2 flex-wrap">
+      <button class="diff-tab" id="tab-easy"   onclick="setDifficulty('easy')">Easy 3×3</button>
+      <button class="diff-tab active" id="tab-medium" onclick="setDifficulty('medium')">Medium 4×4</button>
+      <button class="diff-tab" id="tab-hard"   onclick="setDifficulty('hard')">Hard 5×5</button>
+    </div>
+  </div>
+
+  <div class="w-full max-w-lg flex justify-center mb-5">
+    <div class="board-grid" id="board" style="width:min(90vw,420px)"></div>
+  </div>
+
+  <div class="flex gap-3 w-full max-w-lg justify-center flex-wrap">
+    <button class="btn-primary" onclick="newGame()">🔀 New Game</button>
+    <button class="btn-secondary" onclick="solvePeek()">👁 Peek Solution</button>
+  </div>
+
+  <!-- Win Overlay -->
+  <div id="winOverlay" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-6">
+    <div class="card win-screen p-8 text-center max-w-sm w-full">
+      <div class="text-6xl mb-3">🎉</div>
+      <h2 class="text-3xl font-extrabold mb-1" style="color:var(--accent)">Puzzle Solved!</h2>
+      <p class="opacity-60 text-sm mb-6 font-medium">Your mind is truly fresh today.</p>
+      <div class="flex justify-around mb-6">
+        <div>
+          <div class="text-xs uppercase tracking-widest opacity-50 font-semibold mb-1">Moves</div>
+          <div class="text-4xl font-extrabold" style="color:var(--accent)" id="winMoves">0</div>
+        </div>
+        <div>
+          <div class="text-xs uppercase tracking-widest opacity-50 font-semibold mb-1">Time</div>
+          <div class="text-4xl font-extrabold" style="color:var(--accent)" id="winTime">0:00</div>
+        </div>
+      </div>
+      <div id="newRecordBadge" class="hidden mb-4 px-4 py-2 rounded-full text-sm font-bold text-white" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">🏆 New Best Record!</div>
+      <div class="flex gap-3 justify-center">
+        <button class="btn-primary" onclick="newGame();closeWin()">Play Again</button>
+        <button class="btn-secondary" onclick="closeWin()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- How To Play Overlay -->
+  <div id="htpOverlay" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-6">
+    <div class="card modal-content p-7 max-w-sm w-full">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-extrabold" style="color:var(--accent)">How to Play</h3>
+        <button onclick="closeHowToPlay()" class="text-2xl opacity-40 hover:opacity-80 transition-opacity leading-none">&times;</button>
+      </div>
+      <ul class="space-y-3 text-sm font-medium opacity-80 leading-relaxed">
+        <li>🎯 <strong>Goal:</strong> Arrange tiles in order (1…N), blank at bottom-right.</li>
+        <li>👆 <strong>Click/Tap</strong> any tile next to the blank to slide it.</li>
+        <li>⌨️ Use <strong>Arrow Keys</strong> to slide tiles.</li>
+        <li>📱 On mobile, <strong>swipe</strong> on the board.</li>
+        <li>🔀 <strong>New Game</strong> shuffles (always solvable!).</li>
+        <li>⏱ Timer starts on your <strong>first move</strong>.</li>
+        <li>🏆 Beat your <strong>Best</strong> time per difficulty!</li>
+        <li>👁 <strong>Peek</strong> flashes the solved state for 0.8s.</li>
+      </ul>
+      <button class="btn-primary w-full mt-6" onclick="closeHowToPlay()">Got it!</button>
+    </div>
+  </div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────────
+  let tiles = [], gridSize = 4, moveCount = 0, timerSeconds = 0;
+  let timerInterval = null, timerStarted = false, difficulty = 'medium';
+  let bestTimes = {}, isDark = false, peekMode = false;
+
+  // ─── Init ─────────────────────────────────────────────────────
+  function init() {
+    loadBest();
+    loadDarkPref();
+    setDifficulty('medium', false);
+    setupKeyboard();
+    setupSwipe();
+    ['winOverlay','htpOverlay'].forEach(id => {
+      document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) { this.classList.add('hidden'); if (id==='winOverlay') stopTimer(); }
+      });
+    });
+  }
+
+  // ─── Puzzle Logic ─────────────────────────────────────────────
+  function shuffle(arr) {
+    for (let i = arr.length-1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+  function countInversions(arr) {
+    const f = arr.filter(x => x !== 0); let inv = 0;
+    for (let i = 0; i < f.length; i++) for (let j = i+1; j < f.length; j++) if (f[i] > f[j]) inv++;
+    return inv;
+  }
+  function isSolvable(arr, n) {
+    const inv = countInversions(arr);
+    if (n % 2 === 1) return inv % 2 === 0;
+    const rowFromBottom = n - Math.floor(arr.indexOf(0) / n);
+    return (inv + rowFromBottom) % 2 === 0;
+  }
+  function generateSolvable(n) {
+    let arr;
+    do { arr = shuffle([...Array(n*n).keys()]); } while (!isSolvable(arr, n));
+    return arr;
+  }
+  function goalState(n) { const g=[]; for(let i=1;i<n*n;i++) g.push(i); g.push(0); return g; }
+  function canMove(ti, bi) {
+    const n=gridSize, tR=Math.floor(ti/n), tC=ti%n, bR=Math.floor(bi/n), bC=bi%n;
+    return (Math.abs(tR-bR)===1&&tC===bC)||(tR===bR&&Math.abs(tC-bC)===1);
+  }
+
+  // ─── Game Control ─────────────────────────────────────────────
+  function setDifficulty(diff, startNew=true) {
+    difficulty = diff;
+    gridSize = {easy:3, medium:4, hard:5}[diff];
+    ['easy','medium','hard'].forEach(d => document.getElementById('tab-'+d).classList.toggle('active', d===diff));
+    updateBestDisplay();
+    if (startNew) newGame();
+  }
+  function newGame() {
+    stopTimer(); timerStarted=false; timerSeconds=0; moveCount=0; peekMode=false;
+    updateMoveCounter(); updateTimerDisplay();
+    tiles = generateSolvable(gridSize);
+    renderBoard();
+  }
+  function slideTile(idx) {
+    const bi = tiles.indexOf(0);
+    if (!canMove(idx, bi)) return;
+    if (!timerStarted) startTimer();
+    [tiles[idx], tiles[bi]] = [tiles[bi], tiles[idx]];
+    moveCount++; updateMoveCounter();
+    renderBoard();
+    if (checkWin()) setTimeout(showWin, 280);
+  }
+  function checkWin() { return goalState(gridSize).every((v,i) => v===tiles[i]); }
+
+  // ─── Rendering ────────────────────────────────────────────────
+  function renderBoard() {
+    const board = document.getElementById('board');
+    const n = gridSize, maxW = Math.min(window.innerWidth*0.9, 420);
+    const gap=8, pad=28, ts = Math.floor((maxW-pad-(n-1)*gap)/n);
+    const bw = ts*n+(n-1)*gap+pad;
+    board.style.cssText = `grid-template-columns:repeat(${n},${ts}px);grid-template-rows:repeat(${n},${ts}px);gap:${gap}px;width:${bw}px`;
+    const fc = n<=3?'tile-lg':n===4?'tile-md':'tile-sm';
+    const goal = goalState(n);
+    board.innerHTML = '';
+    tiles.forEach((val, idx) => {
+      const el = document.createElement('div');
+      el.className = 'tile ' + fc;
+      el.style.width = el.style.height = ts+'px';
+      if (val === 0) {
+        el.style.cssText += ';background:transparent;border:2px dashed rgba(0,0,0,0.07);box-shadow:none;cursor:default';
+      } else {
+        el.textContent = val;
+        if (goal[idx]===val) el.classList.add('correct');
+        el.addEventListener('click', () => slideTile(idx));
+      }
+      board.appendChild(el);
+    });
+  }
+
+  // ─── Win / Timer / Stats ──────────────────────────────────────
+  function showWin() {
+    stopTimer(); spawnConfetti(120);
+    document.getElementById('winMoves').textContent = moveCount;
+    document.getElementById('winTime').textContent  = formatTime(timerSeconds);
+    const key = difficulty+'-'+gridSize, prev = bestTimes[key], badge = document.getElementById('newRecordBadge');
+    if (!prev || timerSeconds < prev) { bestTimes[key]=timerSeconds; saveBest(); badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+    updateBestDisplay();
+    document.getElementById('winOverlay').classList.remove('hidden');
+  }
+  function closeWin()      { document.getElementById('winOverlay').classList.add('hidden'); }
+  function openHowToPlay() { document.getElementById('htpOverlay').classList.remove('hidden'); }
+  function closeHowToPlay(){ document.getElementById('htpOverlay').classList.add('hidden'); }
+  function startTimer() { timerStarted=true; timerInterval=setInterval(()=>{timerSeconds++;updateTimerDisplay();},1000); }
+  function stopTimer()  { clearInterval(timerInterval); timerInterval=null; }
+  function formatTime(s) { return Math.floor(s/60)+':'+(s%60).toString().padStart(2,'0'); }
+  function updateTimerDisplay() { document.getElementById('timerDisplay').textContent=formatTime(timerSeconds); }
+  function updateMoveCounter() {
+    const el=document.getElementById('moveCounter'); el.textContent=moveCount;
+    el.classList.remove('stat-pulse'); void el.offsetWidth; el.classList.add('stat-pulse');
+  }
+  function loadBest()  { try { bestTimes=JSON.parse(localStorage.getItem('mfp_best')||'{}'); } catch{bestTimes={};} }
+  function saveBest()  { localStorage.setItem('mfp_best',JSON.stringify(bestTimes)); }
+  function updateBestDisplay() { const b=bestTimes[difficulty+'-'+gridSize]; document.getElementById('bestDisplay').textContent=b!=null?formatTime(b):'—'; }
+
+  // ─── Peek ─────────────────────────────────────────────────────
+  function solvePeek() {
+    if (peekMode) return; peekMode=true;
+    const saved=[...tiles]; tiles=goalState(gridSize); renderBoard();
+    setTimeout(()=>{ tiles=saved; peekMode=false; renderBoard(); }, 800);
+  }
+
+  // ─── Dark Mode ────────────────────────────────────────────────
+  function toggleDark() {
+    isDark=!isDark;
+    document.documentElement.classList.toggle('dark',isDark);
+    document.documentElement.classList.toggle('light',!isDark);
+    document.getElementById('modeIcon').textContent=isDark?'🌙':'☀️';
+    localStorage.setItem('mfp_dark',isDark?'1':'0');
+  }
+  function loadDarkPref() { if(localStorage.getItem('mfp_dark')==='1') toggleDark(); }
+
+  // ─── Keyboard ─────────────────────────────────────────────────
+  function setupKeyboard() {
+    document.addEventListener('keydown', e => {
+      const n=gridSize, bi=tiles.indexOf(0), bR=Math.floor(bi/n), bC=bi%n;
+      let ti=-1;
+      if(e.key==='ArrowUp'   &&bR<n-1) ti=bi+n;
+      if(e.key==='ArrowDown' &&bR>0)   ti=bi-n;
+      if(e.key==='ArrowLeft' &&bC<n-1) ti=bi+1;
+      if(e.key==='ArrowRight'&&bC>0)   ti=bi-1;
+      if(ti>=0){e.preventDefault();slideTile(ti);}
+    });
+  }
+
+  // ─── Swipe ────────────────────────────────────────────────────
+  function setupSwipe() {
+    const board=document.getElementById('board'); let sx=0,sy=0;
+    board.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+    board.addEventListener('touchend',e=>{
+      const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+      if(Math.abs(dx)<30&&Math.abs(dy)<30) return;
+      const n=gridSize,bi=tiles.indexOf(0),bR=Math.floor(bi/n),bC=bi%n; let ti=-1;
+      if(Math.abs(dx)>Math.abs(dy)){if(dx>0&&bC>0)ti=bi-1;if(dx<0&&bC<n-1)ti=bi+1;}
+      else{if(dy>0&&bR>0)ti=bi-n;if(dy<0&&bR<n-1)ti=bi+n;}
+      if(ti>=0) slideTile(ti);
+    },{passive:true});
+  }
+
+  // ─── Confetti ─────────────────────────────────────────────────
+  const CC=['#0d9488','#059669','#34d399','#6ee7b7','#a7f3d0','#fbbf24','#f59e0b','#fb923c','#f87171','#60a5fa','#a78bfa','#f472b6'];
+  function spawnConfetti(count) {
+    for(let i=0;i<count;i++){
+      const p=document.createElement('div'); p.className='confetti-piece';
+      const del=Math.random()*2, dur=2.5+Math.random()*2, sz=6+Math.random()*10;
+      p.style.cssText=`left:${Math.random()*100}vw;width:${sz}px;height:${sz}px;background:${CC[Math.floor(Math.random()*CC.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-delay:${del}s;animation-duration:${dur}s`;
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(),(del+dur+0.5)*1000);
+    }
+  }
+
+  window.addEventListener('resize',()=>{ if(tiles.length>0) renderBoard(); });
+  init();
+</script>
+</body>
+</html>, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>
